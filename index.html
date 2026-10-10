@@ -85,7 +85,7 @@ const ctx = canvas.getContext("2d");
 
 // --- RESİMLER ---
 const bgImg = new Image();
-bgImg.src = "kılıcarkayk.png";
+bgImg.src = "karanlık arka plan.jpeg";
 
 const playerImg = new Image();
 playerImg.src = "WhatsApp Image 2026-10-10 at 18.39.486.jpeg";
@@ -99,14 +99,14 @@ enemy2Img.src = "WhatsApp Image 2026-10-10 at 18.39.48.jpeg";
 const attackImg = new Image();
 attackImg.src = "kılıcarkayk.png";
 
-// Rastgele Hasar Efektleri için (3 farklı görsel varsa buraya ekleyebilirsin, örnek olarak aynı mantık kuruldu)
+// 3 Farklı Hasar Efekti (Görseller veya güvenli yedekler)
 const hitEffectImgs = [
     new Image(),
     new Image(),
     new Image()
 ];
 hitEffectImgs[0].src = "kılıcarkayk.png";
-hitEffectImgs[1].src = "kılıcarkayk.png"; // İstersen buraya 2. ve 3. hasar efektinin adını yazabilirsin
+hitEffectImgs[1].src = "kılıcarkayk.png";
 hitEffectImgs[2].src = "kılıcarkayk.png";
 
 // --- WEB AUDIO API (SESLER) ---
@@ -155,10 +155,10 @@ function playSound(type) {
 
 let score = 0;
 let distance = 0;
-let health = 100; // Başlangıç Canı
+let health = 100;
 let gameOver = false;
 let gameWon = false;
-let currentHitEffect = 0; // Rastgele efekt seçimi için
+let currentHitEffect = 0;
 
 const player = {
     x: 100,
@@ -173,7 +173,7 @@ const player = {
     facing: 1,
     isAttacking: false,
     attackTimer: 0,
-    invincibleTimer: 0 // Hasar aldıktan sonra üst üste vurulmayı önlemek için
+    invincibleTimer: 0
 };
 
 const gravity = 0.6;
@@ -245,7 +245,7 @@ function attack() {
 }
 
 function generateNewWorld() {
-    if (distance >= 5000) return; // 5000 metrede dünyayı durdur
+    if (distance >= 5000) return;
 
     let lastPlatform = platforms[platforms.length - 1];
     if (lastPlatform && lastPlatform.x < canvas.width + 200) {
@@ -312,7 +312,6 @@ function update() {
         gameOver = true;
     }
 
-    // 5000 metre kontrolü (Kale / Kazanma)
     if (distance >= 5000 && !gameWon) {
         gameWon = true;
     }
@@ -339,7 +338,6 @@ function update() {
         if (!e.alive) return;
         e.x -= e.speed;
 
-        // Çarpışma ve 20 Can gitmesi
         if (player.x < e.x + e.width &&
             player.x + player.width > e.x &&
             player.y < e.y + e.height &&
@@ -347,9 +345,9 @@ function update() {
             
             if (player.invincibleTimer === 0) {
                 health -= 20;
-                player.invincibleTimer = 60; // 1 saniye dokunulmazlık
+                player.invincibleTimer = 60;
                 playSound('hit');
-                currentHitEffect = Math.floor(Math.random() * 3); // 3 efekt arasından rastgele seç
+                currentHitEffect = Math.floor(Math.random() * 3);
 
                 if (health <= 0) {
                     health = 0;
@@ -389,7 +387,6 @@ function draw() {
         }
     });
 
-    // Oyuncu (Hasar aldığında yanıp sönme efekti)
     if (player.invincibleTimer % 10 < 5) {
         if (playerImg.complete && playerImg.naturalWidth !== 0) {
             ctx.drawImage(playerImg, player.x, player.y, player.width, player.height);
@@ -399,33 +396,33 @@ function draw() {
         }
     }
     
+    // --- KILIÇ VURUŞ EFEKTİ (Düzeltildi: Artık devasa değil, normal boyutlarda) ---
     if (player.isAttacking) {
-        let attackX = player.facing > 0 ? player.x + player.width : player.x - 30;
+        let attackX = player.facing > 0 ? player.x + player.width : player.x - 35;
         if (attackImg.complete && attackImg.naturalWidth !== 0) {
-            ctx.drawImage(attackImg, attackX, player.y + 5, 30, 30);
+            ctx.drawImage(attackImg, attackX, player.y + 5, 35, 30);
         } else {
             ctx.fillStyle = "#ff0000";
             ctx.fillRect(attackX, player.y + 10, 25, 20);
         }
     }
 
-    // --- ÜST BİLGİLER (Can Barı, Skor, Mesafe) ---
+    // ÜST BİLGİLER
     ctx.fillStyle = "#000000";
     ctx.font = "bold 16px Arial";
     ctx.fillText("Skor: " + score, 20, 30);
     ctx.fillText("Mesafe: " + distance + "m / 5000m", 20, 55);
 
-    // Can Barı Çerçevesi
+    // Can Barı
     ctx.strokeStyle = "#000000";
     ctx.lineWidth = 2;
     ctx.strokeRect(580, 15, 200, 20);
-    // Can Dolgusu
     ctx.fillStyle = health > 40 ? "#00ff00" : "#ff0000";
     ctx.fillRect(580, 15, (health / 100) * 200, 20);
     ctx.fillStyle = "#000000";
     ctx.fillText("Can: " + health + "%", 630, 31);
 
-    // Hasar aldığında rastgele 3 efektin birini gösterme
+    // Rastgele Hasar Efekti (3 çeşit)
     if (player.invincibleTimer > 45) {
         let effImg = hitEffectImgs[currentHitEffect];
         if (effImg.complete && effImg.naturalWidth !== 0) {
@@ -433,7 +430,7 @@ function draw() {
         }
     }
 
-    // GAME OVER EKRANI
+    // GAME OVER EKRANI VE YENİDEN DENE BUTONU
     if (gameOver) {
         ctx.fillStyle = "rgba(255, 255, 255, 0.95)";
         ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -441,18 +438,18 @@ function draw() {
         ctx.fillStyle = "#FF0000";
         ctx.font = "bold 36px Arial";
         ctx.textAlign = "center";
-        ctx.fillText("GAME OVER", canvas.width / 2, 150);
+        ctx.fillText("GAME OVER", canvas.width / 2, 140);
 
-        // Yeniden Dene Butonu Çizimi
+        // Yeniden Dene Butonu
         ctx.fillStyle = "#000000";
-        ctx.fillRect(canvas.width / 2 - 100, 200, 200, 50);
+        ctx.fillRect(canvas.width / 2 - 100, 180, 200, 50);
         ctx.fillStyle = "#ffffff";
-        ctx.font = "bold 20px Arial";
-        ctx.fillText("YENİDEN DENE", canvas.width / 2, 232);
+        ctx.font = "bold 18px Arial";
+        ctx.fillText("YENİDEN DENE", canvas.width / 2, 212);
         ctx.textAlign = "start";
     }
 
-    // KAZANDIN EKRANI (5000 metre)
+    // KAZANDIN EKRANI VE DEVAM EDİLECEK BUTONU
     if (gameWon) {
         ctx.fillStyle = "rgba(0, 0, 0, 0.85)";
         ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -460,41 +457,38 @@ function draw() {
         ctx.fillStyle = "#00ff00";
         ctx.font = "bold 36px Arial";
         ctx.textAlign = "center";
-        ctx.fillText("KAZANDIN!", canvas.width / 2, 160);
+        ctx.fillText("KAZANDIN!", canvas.width / 2, 140);
 
         ctx.fillStyle = "#ffffff";
-        ctx.font = "bold 22px Arial";
-        ctx.fillText("Kareye ulaştın ve kaleyi fethettin!", canvas.width / 2, 210);
+        ctx.font = "bold 20px Arial";
+        ctx.fillText("Kaleye ulaştın!", canvas.width / 2, 190);
 
         // Devam Edilecek Butonu
         ctx.fillStyle = "#ffffff";
-        ctx.fillRect(canvas.width / 2 - 100, 260, 200, 50);
+        ctx.fillRect(canvas.width / 2 - 100, 230, 200, 50);
         ctx.fillStyle = "#000000";
-        ctx.font = "bold 20px Arial";
-        ctx.fillText("DEVAM EDİLECEK", canvas.width / 2, 292);
+        ctx.font = "bold 18px Arial";
+        ctx.fillText("DEVAM EDİLECEK", canvas.width / 2, 262);
         ctx.textAlign = "start";
     }
 }
 
-// Tıklama / Dokunma Algılama (Yeniden Dene veya Devam Edilecek butonları için)
+// Buton Tıklama Koordinatları (Game Over ve Kazandın butonları)
 canvas.addEventListener("click", (e) => {
     let rect = canvas.getBoundingClientRect();
     let mouseX = e.clientX - rect.left;
     let mouseY = e.clientY - rect.top;
 
     if (gameOver) {
-        // Yeniden Dene Buton Koordinatları Kontrolü
         if (mouseX >= canvas.width / 2 - 100 && mouseX <= canvas.width / 2 + 100 &&
-            mouseY >= 200 && mouseY <= 250) {
+            mouseY >= 180 && mouseY <= 230) {
             resetGame();
         }
     } else if (gameWon) {
-        // Devam Edilecek Buton Koordinatları Kontrolü
         if (mouseX >= canvas.width / 2 - 100 && mouseX <= canvas.width / 2 + 100 &&
-            mouseY >= 260 && mouseY <= 310) {
-            // Oyunu uzat / sıfırlamadan mesafeyi artırarak devam ettir
+            mouseY >= 230 && mouseY <= 280) {
             gameWon = false;
-            distance += 1; 
+            distance += 1;
         }
     }
 });

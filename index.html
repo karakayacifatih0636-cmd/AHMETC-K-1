@@ -16,7 +16,7 @@
         body, html {
             width: 100%;
             height: 100%;
-            background-color: #000000;
+            background-color: #111111;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -28,20 +28,21 @@
             position: relative;
             width: 100vw;
             height: 100vh;
-            max-width: 100%;
-            max-height: 100%;
+            max-width: 800px;
+            max-height: 450px;
+            box-shadow: 0 0 20px rgba(0,0,0,0.8);
         }
 
         #gameCanvas {
             width: 100%;
             height: 100%;
             display: block;
-            background-color: #ffffff;
+            background-color: #222222;
         }
 
         .controls-overlay {
             position: absolute;
-            bottom: 20px;
+            bottom: 15px;
             left: 0;
             width: 100%;
             display: flex;
@@ -57,17 +58,17 @@
         }
 
         button {
-            width: 65px;
-            height: 65px;
-            font-size: 24px;
+            width: 60px;
+            height: 60px;
+            font-size: 22px;
             font-weight: bold;
-            background-color: rgba(255, 255, 255, 0.7);
+            background-color: rgba(255, 255, 255, 0.85);
             color: #000000;
             border: 2px solid #000000;
             border-radius: 50%;
             cursor: pointer;
             touch-action: manipulation;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+            box-shadow: 0 4px 6px rgba(0,0,0,0.4);
         }
 
         button:active {
@@ -102,9 +103,8 @@ const bgImg = new Image();
 bgImg.src = "karanlık arka plan.jpeg";
 
 const playerImg = new Image();
-playerImg.src = "WhatsApp Image 2026-10-10 at 18.39.486.jpeg"; // Durma / Düz ayak görsel
+playerImg.src = "WhatsApp Image 2026-10-10 at 18.39.486.jpeg";
 
-// Yürüme Animasyonu Görselleri
 const walkImg1 = new Image();
 walkImg1.src = "civyurume1.png";
 
@@ -155,7 +155,6 @@ function playSound(type) {
         osc.start(now);
         osc.stop(now + 0.15);
     } else if (type === 'walk') {
-        // Yürüme adım sesi
         osc.type = 'triangle';
         osc.frequency.setValueAtTime(80, now);
         osc.frequency.linearRampToValueAtTime(40, now + 0.08);
@@ -189,7 +188,6 @@ let gameOver = false;
 let gameWon = false;
 let currentHitEffect = 0;
 
-// Animasyon ve Yürüme Zamanlayıcı Değişkenleri
 let walkTimer = 0;
 let walkStep = 0;
 
@@ -326,7 +324,6 @@ function update() {
         player.dx = 0;
     }
 
-    // Yürüme Animasyonu ve Ses Kontrolü (0.35 saniye = ~21 frame)
     if (isMoving && player.grounded) {
         walkTimer++;
         if (walkTimer >= 21) {
@@ -413,34 +410,36 @@ function update() {
 }
 
 function draw() {
+    // Arka Plan (Yüklendiyse görsel, yüklenmediyse şık koyu tema)
     if (bgImg.complete && bgImg.naturalWidth !== 0) {
         ctx.drawImage(bgImg, 0, 0, canvas.width, canvas.height);
     } else {
-        ctx.fillStyle = "#ffffff";
+        ctx.fillStyle = "#1e1e1e";
         ctx.fillRect(0, 0, canvas.width, canvas.height);
     }
 
+    // Platformlar
     ctx.fillStyle = "#000000";
     platforms.forEach(p => {
         ctx.fillRect(p.x, p.y, p.width, p.height);
     });
 
+    // Düşmanlar
     enemies.forEach(e => {
         if (e.alive) {
             let img = e.type === 1 ? enemy1Img : enemy2Img;
             if (img.complete && img.naturalWidth !== 0) {
                 ctx.drawImage(img, e.x, e.y, e.width, e.height);
             } else {
-                ctx.fillStyle = e.type === 1 ? "#008000" : "#ff0000";
+                ctx.fillStyle = e.type === 1 ? "#00aa00" : "#aa0000";
                 ctx.fillRect(e.x, e.y, e.width, e.height);
             }
         }
     });
 
-    // Oyuncu Çizimi ve Animasyon Seçimi
+    // Oyuncu Çizimi ve Yürüme Animasyonu
     if (player.invincibleTimer % 10 < 5) {
-        let currentImg = civyurume1.png; // Durma hali: düz ayaklı orijinal görsel
-
+        let currentImg = playerImg;
         let isMoving = (keys["ArrowLeft"] || keys["KeyA"] || keys["ArrowRight"] || keys["KeyD"]);
         if (isMoving && player.grounded) {
             currentImg = (walkStep === 0) ? walkImg1 : walkImg2;
@@ -449,7 +448,7 @@ function draw() {
         if (currentImg.complete && currentImg.naturalWidth !== 0) {
             ctx.drawImage(currentImg, player.x, player.y, player.width, player.height);
         } else {
-            ctx.fillStyle = "#0000ff";
+            ctx.fillStyle = "#ffff00";
             ctx.fillRect(player.x, player.y, player.width, player.height);
         }
     }
@@ -465,18 +464,18 @@ function draw() {
     }
 
     // ÜST BİLGİLER
-    ctx.fillStyle = "#000000";
+    ctx.fillStyle = "#ffffff";
     ctx.font = "bold 16px Arial";
     ctx.fillText("Skor: " + score, 20, 30);
     ctx.fillText("Mesafe: " + distance + "m / 5000m", 20, 55);
 
     // Can Barı
-    ctx.strokeStyle = "#000000";
+    ctx.strokeStyle = "#ffffff";
     ctx.lineWidth = 2;
     ctx.strokeRect(580, 15, 200, 20);
     ctx.fillStyle = health > 40 ? "#00ff00" : "#ff0000";
     ctx.fillRect(580, 15, (health / 100) * 200, 20);
-    ctx.fillStyle = "#000000";
+    ctx.fillStyle = "#ffffff";
     ctx.fillText("Can: " + health + "%", 630, 31);
 
     if (player.invincibleTimer > 45) {
@@ -488,7 +487,7 @@ function draw() {
 
     // GAME OVER EKRANI
     if (gameOver) {
-        ctx.fillStyle = "rgba(255, 255, 255, 0.95)";
+        ctx.fillStyle = "rgba(0, 0, 0, 0.9)";
         ctx.fillRect(0, 0, canvas.width, canvas.height);
 
         ctx.fillStyle = "#FF0000";
@@ -496,9 +495,9 @@ function draw() {
         ctx.textAlign = "center";
         ctx.fillText("GAME OVER", canvas.width / 2, 140);
 
-        ctx.fillStyle = "#000000";
-        ctx.fillRect(canvas.width / 2 - 100, 180, 200, 50);
         ctx.fillStyle = "#ffffff";
+        ctx.fillRect(canvas.width / 2 - 100, 180, 200, 50);
+        ctx.fillStyle = "#000000";
         ctx.font = "bold 18px Arial";
         ctx.fillText("YENİDEN DENE", canvas.width / 2, 212);
         ctx.textAlign = "start";
@@ -506,7 +505,7 @@ function draw() {
 
     // KAZANDIN EKRANI
     if (gameWon) {
-        ctx.fillStyle = "rgba(0, 0, 0, 0.85)";
+        ctx.fillStyle = "rgba(0, 0, 0, 0.9)";
         ctx.fillRect(0, 0, canvas.width, canvas.height);
 
         ctx.fillStyle = "#00ff00";
@@ -520,9 +519,9 @@ function draw() {
 
         ctx.fillStyle = "#ffffff";
         ctx.fillRect(canvas.width / 2 - 100, 230, 200, 50);
-        ctx.fillStyle = "#FF0000";
+        ctx.fillStyle = "#000000";
         ctx.font = "bold 18px Arial";
-        ctx.fillText("devam edicek...", canvas.width / 2, 262);
+        ctx.fillText("DEVAM EDİLECEK", canvas.width / 2, 262);
         ctx.textAlign = "start";
     }
 }

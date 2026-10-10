@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Resimli Parkur Oyunu</title>
+    <title>CİVCİV'İN GECE MACERASI</title>
     <style>
         * {
             box-sizing: border-box;
@@ -83,6 +83,7 @@
 const canvas = document.getElementById("gameCanvas");
 const ctx = canvas.getContext("2d");
 
+// --- RESİMLER ---
 const bgImg = new Image();
 bgImg.src = "WhatsApp Image 2026-10-10 at 18.44.04.jpeg";
 
@@ -94,6 +95,10 @@ enemy1Img.src = "WhatsApp Image 2026-10-10 at 18.39.47.jpeg";
 
 const enemy2Img = new Image();
 enemy2Img.src = "WhatsApp Image 2026-10-10 at 18.39.48.jpeg";
+
+// Hasar / Saldırı Efekti Görseli
+const attackImg = new Image();
+attackImg.src = "saldiri.jpeg";
 
 let score = 0;
 let distance = 0;
@@ -274,7 +279,6 @@ function update() {
 }
 
 function draw() {
-    // Arka Plan Resmi (Yüklenmediyse beyaz renk gösterir)
     if (bgImg.complete && bgImg.naturalWidth !== 0) {
         ctx.drawImage(bgImg, 0, 0, canvas.width, canvas.height);
     } else {
@@ -282,13 +286,11 @@ function draw() {
         ctx.fillRect(0, 0, canvas.width, canvas.height);
     }
 
-    // Platformlar (Siyah Kutu)
     ctx.fillStyle = "#000000";
     platforms.forEach(p => {
         ctx.fillRect(p.x, p.y, p.width, p.height);
     });
 
-    // Yaratıklar (Resimli / Yüklenmediyse Renkli Kutu)
     enemies.forEach(e => {
         if (e.alive) {
             let img = e.type === 1 ? enemy1Img : enemy2Img;
@@ -301,22 +303,23 @@ function draw() {
         }
     });
 
-    // Oyuncu (Resimli / Yüklenmediyse Mavi Kutu)
     if (playerImg.complete && playerImg.naturalWidth !== 0) {
         ctx.drawImage(playerImg, player.x, player.y, player.width, player.height);
     } else {
         ctx.fillStyle = "#0000ff";
         ctx.fillRect(player.x, player.y, player.width, player.height);
     }
-
-    // Saldırı Efekti
+    
     if (player.isAttacking) {
-        ctx.fillStyle = "#ff0000";
-        let attackX = player.facing > 0 ? player.x + player.width : player.x - 25;
-        ctx.fillRect(attackX, player.y + 10, 25, 20);
+        let attackX = player.facing > 0 ? player.x + player.width : player.x - 30;
+        if (attackImg.complete && attackImg.naturalWidth !== 0) {
+            ctx.drawImage(attackImg, attackX, player.y + 5, 30, 30);
+        } else {
+            ctx.fillStyle = "#ff0000";
+            ctx.fillRect(attackX, player.y + 10, 25, 20);
+        }
     }
 
-    // Skor ve Mesafe
     ctx.fillStyle = "#000000";
     ctx.font = "bold 18px Arial";
     ctx.fillText("Skor: " + score, 20, 30);

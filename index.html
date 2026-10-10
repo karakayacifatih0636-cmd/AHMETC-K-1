@@ -83,12 +83,11 @@
 const canvas = document.getElementById("gameCanvas");
 const ctx = canvas.getContext("2d");
 
-// --- RESİMLER ---
 const bgImg = new Image();
 bgImg.src = "WhatsApp Image 2026-10-10 at 18.44.04.jpeg";
 
 const playerImg = new Image();
-playerImg.src = "56789.jpeg";
+playerImg.src = "WhatsApp Image 2026-10-10 at 18.39.486.jpeg";
 
 const enemy1Img = new Image();
 enemy1Img.src = "WhatsApp Image 2026-10-10 at 18.39.47.jpeg";
@@ -327,10 +326,10 @@ function draw() {
         ctx.fillStyle = "rgba(255, 255, 255, 0.9)";
         ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-        ctx.fillStyle = "#000000";
+        ctx.fillStyle = "#FF0000";
         ctx.font = "bold 36px Arial";
         ctx.textAlign = "center";
-        ctx.fillText("OYUN BİTTİ", canvas.width / 2, 180);
+        ctx.fillText("GAME OVER", canvas.width / 2, 180);
         ctx.font = "18px Arial";
         ctx.fillText("Yeniden başlamak için sayfayı yenileyin", canvas.width / 2, 220);
         ctx.textAlign = "start";

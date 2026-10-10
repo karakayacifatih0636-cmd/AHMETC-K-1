@@ -2,506 +2,209 @@
 <html lang="tr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-select=none">
-    <title>Şövalye ve Saray Macerası - Civciv Kurtarma</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Minimalist Kutu Parkur</title>
     <style>
         * {
             box-sizing: border-box;
-            user-select: none;
-            -webkit-user-select: none;
             margin: 0;
             padding: 0;
+            user-select: none;
+            -webkit-user-select: none;
         }
+
         body {
-            background-color: #0d0f12;
-            color: #f0f4f8;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #ffffff;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
             min-height: 100vh;
+            font-family: Arial, sans-serif;
             overflow: hidden;
         }
-        .game-wrapper {
-            position: relative;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            width: 100%;
-            max-width: 850px;
-            padding: 10px;
+
+        #gameCanvas {
+            background-color: #ffffff;
+            border: 2px solid #000000;
+            display: block;
+            max-width: 100%;
         }
-        .header {
-            width: 100%;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 8px;
-            padding: 0 5px;
-        }
-        .title {
-            font-size: 1.2rem;
-            font-weight: bold;
-            color: #f39c12;
-            text-shadow: 0 0 8px rgba(243, 156, 18, 0.4);
-        }
-        .status-bar {
-            font-size: 0.95rem;
-            color: #2ecc71;
-            font-weight: bold;
-        }
-        canvas {
-            background: #000;
-            border: 3px solid #2c3e50;
-            border-radius: 12px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.7);
-            width: 100%;
-            height: auto;
-            aspect-ratio: 2 / 1;
-            touch-action: none;
-            image-rendering: pixelated;
-        }
+
         .controls {
             display: flex;
             justify-content: space-between;
-            width: 100%;
-            margin-top: 12px;
-            gap: 15px;
+            width: 800px;
+            max-width: 100%;
+            padding: 15px;
+            background-color: #ffffff;
         }
+
         .btn-group {
             display: flex;
             gap: 10px;
         }
-        .btn {
-            width: 65px;
-            height: 60px;
-            font-size: 1.2rem;
+
+        button {
+            width: 70px;
+            height: 70px;
+            font-size: 24px;
             font-weight: bold;
-            background: linear-gradient(145deg, #2c3e50, #1a252f);
-            color: #ecf0f1;
-            border: 2px solid #34495e;
-            border-radius: 14px;
-            box-shadow: 0 5px 0 #111;
+            background-color: #ffffff;
+            color: #000000;
+            border: 3px solid #000000;
+            border-radius: 8px;
             cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: all 0.08s ease;
             touch-action: manipulation;
         }
-        .btn:active, .btn.pressed {
-            transform: translateY(4px);
-            box-shadow: 0 1px 0 #111;
-            background: linear-gradient(145deg, #1f2c38, #2c3e50);
-            border-color: #f39c12;
-        }
-        .btn-action {
-            background: linear-gradient(145deg, #d35400, #a04000);
-            border-color: #e67e22;
-        }
-        .btn-action:active, .btn-action.pressed {
-            background: linear-gradient(145deg, #a04000, #d35400);
-        }
-        .btn-jump {
-            background: linear-gradient(145deg, #27ae60, #1e8449);
-            border-color: #2ecc71;
-        }
-        .btn-jump:active, .btn-jump.pressed {
-            background: linear-gradient(145deg, #1e8449, #27ae60);
-        }
-        @media (max-width: 600px) {
-            .btn {
-                width: 52px;
-                height: 52px;
-                font-size: 1rem;
-            }
-            .title {
-                font-size: 1rem;
-            }
+
+        button:active {
+            background-color: #000000;
+            color: #ffffff;
         }
     </style>
 </head>
 <body>
 
-<div class="game-wrapper">
-    <div class="header">
-        <div class="title">⚔️ Şövalye & Saray Macerası</div>
-        <div class="status-bar" id="gamePhaseText">🌲 Orman Parkuru</div>
-    </div>
-
     <canvas id="gameCanvas" width="800" height="400"></canvas>
 
     <div class="controls">
         <div class="btn-group">
-            <button class="btn" id="leftBtn">◀</button>
-            <button class="btn" id="rightBtn">▶</button>
+            <button id="leftBtn">◀</button>
+            <button id="rightBtn">▶</button>
         </div>
         <div class="btn-group">
-            <button class="btn btn-jump" id="jumpBtn">⬆ Zıpla</button>
-            <button class="btn btn-action" id="swordBtn">🗡️ Kılıç</button>
+            <button id="jumpBtn">⬆</button>
+            <button id="attackBtn">⚔️</button>
         </div>
     </div>
-</div>
 
 <script>
-class SoundController {
-    constructor() {
-        this.ctx = null;
-    }
-    init() {
-        if (!this.ctx) {
-            this.ctx = new (window.AudioContext || window.webkitAudioContext)();
-        }
-    }
-    playJump() {
-        if (!this.ctx) return;
-        const osc = this.ctx.createOscillator();
-        const gain = this.ctx.createGain();
-        osc.connect(gain);
-        gain.connect(this.ctx.destination);
-        osc.type = 'sine';
-        osc.frequency.setValueAtTime(150, this.ctx.currentTime);
-        osc.frequency.exponentialRampToValueAtTime(420, this.ctx.currentTime + 0.15);
-        gain.gain.setValueAtTime(0.25, this.ctx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.15);
-        osc.start();
-        osc.stop(this.ctx.currentTime + 0.15);
-    }
-    playSword() {
-        if (!this.ctx) return;
-        const osc = this.ctx.createOscillator();
-        const gain = this.ctx.createGain();
-        osc.connect(gain);
-        gain.connect(this.ctx.destination);
-        osc.type = 'sawtooth';
-        osc.frequency.setValueAtTime(320, this.ctx.currentTime);
-        osc.frequency.exponentialRampToValueAtTime(80, this.ctx.currentTime + 0.12);
-        gain.gain.setValueAtTime(0.2, this.ctx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.12);
-        osc.start();
-        osc.stop(this.ctx.currentTime + 0.12);
-    }
-    playMagic() {
-        if (!this.ctx) return;
-        const osc = this.ctx.createOscillator();
-        const gain = this.ctx.createGain();
-        osc.connect(gain);
-        gain.connect(this.ctx.destination);
-        osc.type = 'sine';
-        osc.frequency.setValueAtTime(500, this.ctx.currentTime);
-        osc.frequency.exponentialRampToValueAtTime(1100, this.ctx.currentTime + 0.25);
-        gain.gain.setValueAtTime(0.2, this.ctx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.25);
-        osc.start();
-        osc.stop(this.ctx.currentTime + 0.25);
-    }
-    playHit() {
-        if (!this.ctx) return;
-        const osc = this.ctx.createOscillator();
-        const gain = this.ctx.createGain();
-        osc.connect(gain);
-        gain.connect(this.ctx.destination);
-        osc.type = 'square';
-        osc.frequency.setValueAtTime(130, this.ctx.currentTime);
-        osc.frequency.exponentialRampToValueAtTime(30, this.ctx.currentTime + 0.2);
-        gain.gain.setValueAtTime(0.3, this.ctx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.2);
-        osc.start();
-        osc.stop(this.ctx.currentTime + 0.2);
-    }
-    playVictory() {
-        if (!this.ctx) return;
-        const now = this.ctx.currentTime;
-        const notes = [261.63, 329.63, 392.00, 523.25, 659.25, 783.99];
-        notes.forEach((freq, idx) => {
-            const osc = this.ctx.createOscillator();
-            const gain = this.ctx.createGain();
-            osc.connect(gain);
-            gain.connect(this.ctx.destination);
-            osc.type = 'triangle';
-            osc.frequency.setValueAtTime(freq, now + idx * 0.12);
-            gain.gain.setValueAtTime(0.3, now + idx * 0.12);
-            gain.gain.exponentialRampToValueAtTime(0.01, now + idx * 0.12 + 0.25);
-            osc.start(now + idx * 0.12);
-            osc.stop(now + idx * 0.12 + 0.25);
-        });
-    }
-}
-
-const sounds = new SoundController();
-
 const canvas = document.getElementById("gameCanvas");
 const ctx = canvas.getContext("2d");
-const phaseText = document.getElementById("gamePhaseText");
 
 let score = 0;
 let distance = 0;
 let gameOver = false;
-let gameWon = false;
-let gamePhase = "forest"; // "forest", "wizard", "castle", "palace_exterior", "palace_inside", "chicks_rescued"
 
-const gravity = 0.55;
-
-// Player Knight
+// Oyuncu Kutusu
 const player = {
-    x: 80,
-    y: 250,
-    width: 38,
-    height: 48,
+    x: 100,
+    y: 200,
+    width: 40,
+    height: 40,
+    color: "#0000ff", // Mavi Kutu
     dx: 0,
     dy: 0,
-    speed: 4.8,
-    jumpPower: -11.5,
+    speed: 5,
+    jumpPower: -12,
     grounded: false,
-    facing: 1, // 1: Right, -1: Left
+    facing: 1,
     isAttacking: false,
     attackTimer: 0
 };
 
-// Wizard Mini-Boss
-const wizard = {
-    x: 700,
-    y: 250,
-    width: 44,
-    height: 52,
-    active: false,
-    hp: 1,
-    shootTimer: 0,
-    hoverOffset: 0
-};
+const gravity = 0.6;
 
-// Castle Gate Wall
-const castle = {
-    x: 1200,
-    y: 120,
-    width: 180,
-    height: 200,
-    hp: 10,
-    active: false,
-    destroyed: false
-};
-
-// Grand Palace Entrance
-const palaceExterior = {
-    x: 2000,
-    y: 60,
-    width: 280,
-    height: 260,
-    active: false,
-    entered: false
-};
-
-// Dark Queen Boss (Inside Palace)
-const darkQueen = {
-    x: 580,
-    y: 230,
-    width: 52,
-    height: 68,
-    active: false,
-    hp: 5,
-    maxHp: 5,
-    shootTimer: 0,
-    teleportTimer: 0,
-    hoverOffset: 0
-};
-
-// Cage & Chicks (Inside Palace behind Dark Queen)
-const chickCage = {
-    x: 700,
-    y: 240,
-    width: 65,
-    height: 80,
-    active: false,
-    broken: false,
-    chicksFreed: false
-};
-
-let magicOrbs = [];
-let confetti = [];
-
-// Platforms
+// Platform Kutuları
 let platforms = [
-    { x: 0, y: 320, width: 3500, height: 80 },
-    { x: 300, y: 230, width: 120, height: 20 },
-    { x: 520, y: 170, width: 140, height: 20 },
-    { x: 800, y: 220, width: 130, height: 20 },
-    { x: 1450, y: 230, width: 130, height: 20 },
-    { x: 1700, y: 180, width: 140, height: 20 }
+    { x: 0, y: 340, width: 900, height: 60 },
+    { x: 350, y: 250, width: 120, height: 20 },
+    { x: 600, y: 190, width: 140, height: 20 }
 ];
 
-// Enemies
+// Düşman Kutuları
 let enemies = [
-    { x: 450, y: 285, width: 35, height: 35, speed: 1.5, type: "turtle", alive: true, hp: 1 },
-    { x: 720, y: 280, width: 36, height: 40, speed: 2.0, type: "knight", alive: true, hp: 2 },
-    { x: 1020, y: 285, width: 35, height: 35, speed: 2.2, type: "turtle", alive: true, hp: 1 },
-    { x: 1550, y: 280, width: 36, height: 40, speed: 2.1, type: "knight", alive: true, hp: 2 }
+    { x: 500, y: 300, width: 40, height: 40, color: "#008000", speed: 1.5, alive: true }, // Yeşil Kutu
+    { x: 750, y: 300, width: 40, height: 40, color: "#ff0000", speed: 2.0, alive: true }  // Kırmızı Kutu
 ];
 
 const keys = {};
 
+// Klavye Kontrolleri
 window.addEventListener("keydown", (e) => {
-    sounds.init();
     keys[e.code] = true;
     if (e.code === "Space" || e.code === "KeyJ") attack();
-    if (e.code === "KeyR" && (gameOver || gameWon)) restartGame();
 });
 
 window.addEventListener("keyup", (e) => {
     keys[e.code] = false;
 });
 
-canvas.addEventListener("click", () => {
-    sounds.init();
-    if (gameOver || gameWon) restartGame();
-});
-
-function setupButton(id, keyName) {
+// Ekran Butonları
+function bindBtn(id, code) {
     const btn = document.getElementById(id);
-    const setKey = (val) => {
-        sounds.init();
-        keys[keyName] = val;
-        if (val) btn.classList.add("pressed");
-        else btn.classList.remove("pressed");
-    };
-    btn.addEventListener("touchstart", (e) => { e.preventDefault(); setKey(true); });
-    btn.addEventListener("touchend", (e) => { e.preventDefault(); setKey(false); });
-    btn.addEventListener("mousedown", () => setKey(true));
-    btn.addEventListener("mouseup", () => setKey(false));
-    btn.addEventListener("mouseleave", () => setKey(false));
+    btn.addEventListener("touchstart", (e) => { e.preventDefault(); keys[code] = true; });
+    btn.addEventListener("touchend", (e) => { e.preventDefault(); keys[code] = false; });
+    btn.addEventListener("mousedown", () => keys[code] = true);
+    btn.addEventListener("mouseup", () => keys[code] = false);
 }
 
-setupButton("leftBtn", "ArrowLeft");
-setupButton("rightBtn", "ArrowRight");
+bindBtn("leftBtn", "ArrowLeft");
+bindBtn("rightBtn", "ArrowRight");
 
-document.getElementById("jumpBtn").addEventListener("click", (e) => {
-    e.preventDefault();
-    sounds.init();
-    jump();
-});
-document.getElementById("swordBtn").addEventListener("click", (e) => {
-    e.preventDefault();
-    sounds.init();
-    attack();
-});
+document.getElementById("jumpBtn").addEventListener("click", () => jump());
+document.getElementById("attackBtn").addEventListener("click", () => attack());
 
 function jump() {
-    if (player.grounded && !gameOver && !gameWon) {
+    if (player.grounded) {
         player.dy = player.jumpPower;
         player.grounded = false;
-        sounds.playJump();
     }
 }
 
 function attack() {
-    if (player.isAttacking || gameOver || gameWon) return;
+    if (player.isAttacking) return;
     player.isAttacking = true;
-    player.attackTimer = 14;
-    sounds.playSword();
+    player.attackTimer = 12;
 
-    const swordX = player.x + (player.facing > 0 ? player.width : -45);
-    const swordWidth = 52;
+    let attackX = player.facing > 0 ? player.x + player.width : player.x - 30;
+    let attackWidth = 30;
 
-    // Hit regular enemies
     enemies.forEach(e => {
-        if (e.alive && e.x < swordX + swordWidth && e.x + e.width > swordX &&
-            Math.abs(player.y - e.y) < 40) {
-            e.hp--;
-            if (e.hp <= 0) {
-                e.alive = false;
-                score += 30;
-                sounds.playHit();
-            }
+        if (e.alive &&
+            attackX < e.x + e.width &&
+            attackX + attackWidth > e.x &&
+            player.y < e.y + e.height &&
+            player.y + player.height > e.y) {
+            e.alive = false;
+            score += 10;
         }
     });
-
-    // Hit Wizard Mini-boss
-    if (wizard.active && wizard.hp > 0) {
-        if (wizard.x < swordX + swordWidth && wizard.x + wizard.width > swordX &&
-            Math.abs(player.y - wizard.y) < 45) {
-            wizard.hp--;
-            wizard.active = false;
-            score += 200;
-            sounds.playVictory();
-            gamePhase = "castle";
-            castle.active = true;
-        }
-    }
-
-    // Hit Castle Wall Gate
-    if (castle.active && !castle.destroyed) {
-        if (castle.x < player.x + 85 && castle.x + castle.width > player.x) {
-            castle.hp--;
-            score += 40;
-            sounds.playHit();
-            if (castle.hp <= 0) {
-                castle.destroyed = true;
-                sounds.playVictory();
-                gamePhase = "palace_exterior";
-                palaceExterior.active = true;
-            }
-        }
-    }
-
-    // Hit Dark Queen Boss
-    if (darkQueen.active && darkQueen.hp > 0) {
-        if (darkQueen.x < swordX + swordWidth && darkQueen.x + darkQueen.width > swordX &&
-            Math.abs(player.y - darkQueen.y) < 55) {
-            darkQueen.hp--;
-            sounds.playHit();
-            if (darkQueen.hp <= 0) {
-                darkQueen.active = false;
-                score += 500;
-                sounds.playVictory();
-                chickCage.active = true;
-            } else {
-                // Teleport away when struck
-                darkQueen.x = Math.max(350, Math.min(680, player.x + (Math.random() > 0.5 ? 200 : -200)));
-            }
-        }
-    }
-
-    // Hit Cage to rescue chicks
-    if (chickCage.active && !chickCage.broken) {
-        if (chickCage.x < swordX + swordWidth && chickCage.x + chickCage.width > swordX &&
-            Math.abs(player.y - chickCage.y) < 60) {
-            chickCage.broken = true;
-            chickCage.chicksFreed = true;
-            gameWon = true;
-            score += 1000;
-            sounds.playVictory();
-            createConfetti();
-        }
-    }
 }
 
-function createConfetti() {
-    confetti = [];
-    for (let i = 0; i < 80; i++) {
-        confetti.push({
-            x: canvas.width / 2,
-            y: canvas.height / 2,
-            vx: (Math.random() - 0.5) * 12,
-            vy: (Math.random() - 0.7) * 10,
-            size: Math.random() * 8 + 4,
-            color: ['#f1c40f', '#e74c3c', '#3498db', '#2ecc71', '#9b59b6'][Math.floor(Math.random() * 5)]
-        });
+function generateNewWorld() {
+    let lastPlatform = platforms[platforms.length - 1];
+    if (lastPlatform.x < canvas.width + 200) {
+        let newX = lastPlatform.x + lastPlatform.width + Math.random() * 80 + 40;
+        let newWidth = Math.random() * 200 + 100;
+        let newY = Math.random() * 120 + 200;
+
+        // Bazen ana zemin seviyesinde yap
+        if (Math.random() > 0.4) newY = 340;
+
+        platforms.push({ x: newX, y: newY, width: newWidth, height: newY === 340 ? 60 : 20 });
+
+        // Düşman ekle
+        if (Math.random() > 0.3) {
+            let enemyType = Math.random() > 0.5 ? "#008000" : "#ff0000";
+            enemies.push({
+                x: newX + newWidth / 2,
+                y: newY - 40,
+                width: 40,
+                height: 40,
+                color: enemyType,
+                speed: Math.random() * 1.5 + 1,
+                alive: true
+            });
+        }
     }
 }
 
 function update() {
-    if (gameOver || gameWon) {
-        if (gameWon) {
-            confetti.forEach(c => {
-                c.x += c.vx;
-                c.y += c.vy;
-                c.vy += 0.2;
-            });
-        }
-        return;
-    }
+    if (gameOver) return;
 
-    // Movement
+    // İleri / Geri Hareket
     if (keys["ArrowLeft"] || keys["KeyA"]) {
         player.dx = -player.speed;
         player.facing = -1;
@@ -520,38 +223,31 @@ function update() {
     player.dy += gravity;
     player.y += player.dy;
 
-    // Sword attack animation timer
-    if (player.isAttacking) {
-        player.attackTimer--;
-        if (player.attackTimer <= 0) player.isAttacking = false;
-    }
+    // Ekran Kaydırma (Sonsuz İlerleme)
+    if (player.x > 300) {
+        let diff = player.x - 300;
+        player.x = 300;
+        distance += Math.floor(diff / 10);
 
-    // Camera & Scrolling inside forest (Stopped when inside palace)
-    if (gamePhase !== "palace_inside" && player.x > 380) {
-        const diff = player.x - 380;
-        player.x = 380;
-        distance += Math.floor(diff / 5);
-
-        // Scroll entities
         platforms.forEach(p => p.x -= diff);
         enemies.forEach(e => e.x -= diff);
-        magicOrbs.forEach(orb => orb.x -= diff);
-        if (wizard.active) wizard.x -= diff;
-        if (castle.active) castle.x -= diff;
-        if (palaceExterior.active) palaceExterior.x -= diff;
     }
 
-    // World boundaries
+    // Sol Sınır
     if (player.x < 0) player.x = 0;
-    if (gamePhase === "palace_inside" && player.x > canvas.width - player.width - 20) {
-        player.x = canvas.width - player.width - 20;
+
+    // Düştü mü? (Oyun Bitti)
+    if (player.y > canvas.height + 50) {
+        gameOver = true;
     }
 
-    // Platform Collisions
+    // Platform Çarpışmaları
     player.grounded = false;
     platforms.forEach(p => {
-        if (player.x + player.width > p.x && player.x < p.x + p.width &&
-            player.y + player.height >= p.y && player.y + player.height - player.dy <= p.y + 12 &&
+        if (player.x + player.width > p.x &&
+            player.x < p.x + p.width &&
+            player.y + player.height >= p.y &&
+            player.y + player.height - player.dy <= p.y + 12 &&
             player.dy >= 0) {
             player.y = p.y - player.height;
             player.dy = 0;
@@ -559,501 +255,89 @@ function update() {
         }
     });
 
-    // Fall Off Check
-    if (player.y > canvas.height + 50) {
-        gameOver = true;
-        sounds.playHit();
+    // Saldırı Sayacı
+    if (player.isAttacking) {
+        player.attackTimer--;
+        if (player.attackTimer <= 0) player.isAttacking = false;
     }
 
-    // --- Story Sequence Triggers ---
-    
-    // 1. Wizard Mini-Boss (Dist >= 400)
-    if (distance >= 400 && gamePhase === "forest") {
-        gamePhase = "wizard";
-        wizard.active = true;
-        wizard.x = canvas.width - 120;
-    }
-
-    // Wizard Behavior
-    if (wizard.active && wizard.hp > 0) {
-        wizard.hoverOffset += 0.05;
-        wizard.y = 250 + Math.sin(wizard.hoverOffset) * 20;
-
-        wizard.shootTimer++;
-        if (wizard.shootTimer >= 110) {
-            wizard.shootTimer = 0;
-            sounds.playMagic();
-            magicOrbs.push({
-                x: wizard.x,
-                y: wizard.y + 15,
-                radius: 10,
-                speed: -5,
-                color: "#00d2ff"
-            });
-        }
-    }
-
-    // 2. Palace Exterior Entrance Check (Dist >= 1100)
-    if (palaceExterior.active && palaceExterior.x <= 420 && !palaceExterior.entered) {
-        // Transition inside palace
-        palaceExterior.entered = true;
-        gamePhase = "palace_inside";
-        
-        // Setup Palace Interior Scene
-        player.x = 60;
-        player.y = 250;
-        platforms = [
-            { x: 0, y: 320, width: 800, height: 80 },
-            { x: 220, y: 220, width: 120, height: 20 },
-            { x: 450, y: 220, width: 120, height: 20 }
-        ];
-        enemies = [];
-        magicOrbs = [];
-
-        // Activate Dark Queen Boss & Chick Cage
-        darkQueen.active = true;
-        darkQueen.x = 580;
-        darkQueen.y = 230;
-        
-        chickCage.x = 710;
-        chickCage.y = 240;
-    }
-
-    // 3. Dark Queen Boss Behavior Inside Palace
-    if (darkQueen.active && darkQueen.hp > 0) {
-        darkQueen.hoverOffset += 0.06;
-        darkQueen.y = 230 + Math.sin(darkQueen.hoverOffset) * 15;
-
-        // Shoot Purple Magic Orbs
-        darkQueen.shootTimer++;
-        if (darkQueen.shootTimer >= 80) {
-            darkQueen.shootTimer = 0;
-            sounds.playMagic();
-            magicOrbs.push({
-                x: darkQueen.x,
-                y: darkQueen.y + 20,
-                radius: 12,
-                speed: -6,
-                color: "#9b59b6"
-            });
-        }
-
-        // Teleport behavior
-        darkQueen.teleportTimer++;
-        if (darkQueen.teleportTimer >= 220) {
-            darkQueen.teleportTimer = 0;
-            darkQueen.x = Math.max(300, Math.min(680, player.x + (Math.random() > 0.5 ? 250 : -250)));
-        }
-    }
-
-    // Update Magic Orbs
-    magicOrbs.forEach((orb, index) => {
-        orb.x += orb.speed;
-
-        const dist = Math.hypot(player.x + player.width / 2 - orb.x, player.y + player.height / 2 - orb.y);
-        if (dist < orb.radius + player.width / 2) {
-            gameOver = true;
-            sounds.playHit();
-        }
-
-        if (orb.x < -20) magicOrbs.splice(index, 1);
-    });
-
-    // Update Enemy Collisions
+    // Düşman Hareketi ve Çarpışma
     enemies.forEach(e => {
         if (!e.alive) return;
         e.x -= e.speed;
 
-        if (player.x < e.x + e.width && player.x + player.width > e.x &&
-            player.y < e.y + e.height && player.y + player.height > e.y) {
+        if (player.x < e.x + e.width &&
+            player.x + player.width > e.x &&
+            player.y < e.y + e.height &&
+            player.y + player.height > e.y) {
             gameOver = true;
-            sounds.playHit();
         }
     });
 
-    // Update Phase Indicator Label
-    if (gamePhase === "forest") phaseText.innerText = "🌲 Orman Parkuru";
-    else if (gamePhase === "wizard") phaseText.innerText = "🧙‍♀️ Büyücü Kadın Geldi!";
-    else if (gamePhase === "castle") phaseText.innerText = "🏰 Kaleyi Yık!";
-    else if (gamePhase === "palace_exterior") phaseText.innerText = "🏛️ Görkemli Saray!";
-    else if (gamePhase === "palace_inside") phaseText.innerText = "👑 Karanlık Kraliçe İle Savaş!";
-    else if (gamePhase === "chicks_rescued") phaseText.innerText = "🐣 Civcivler Kurtarıldı!";
+    // Temizlik ve Yeni Dünya Üretimi
+    platforms = platforms.filter(p => p.x + p.width > -200);
+    enemies = enemies.filter(e => e.x + e.width > -200);
+    generateNewWorld();
 }
 
 function draw() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    // Bembeyaz Arka Plan
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    if (gamePhase !== "palace_inside") {
-        // --- Forest & Outdoor Background ---
-        ctx.fillStyle = "#6cb4e4";
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-        // Sun
-        ctx.fillStyle = "#f5c482";
-        ctx.beginPath();
-        ctx.arc(550 - (distance % 800), 80, 38, 0, Math.PI * 2);
-        ctx.fill();
-
-        // Parallax Pine Trees
-        ctx.fillStyle = "#266150";
-        for (let i = -100; i < canvas.width + 200; i += 110) {
-            const xPos = i - (distance % 110);
-            ctx.beginPath();
-            ctx.moveTo(xPos, 320);
-            ctx.lineTo(xPos + 35, 140);
-            ctx.lineTo(xPos + 70, 320);
-            ctx.fill();
-        }
-
-        // Castle Wall
-        if (castle.active && castle.x < canvas.width + 100 && castle.x > -250) {
-            ctx.fillStyle = castle.destroyed ? "#444" : "#7f8c8d";
-            ctx.fillRect(castle.x, castle.y, castle.width, castle.height);
-
-            ctx.fillStyle = "#2c3e50";
-            ctx.fillRect(castle.x + 60, castle.y + 110, 60, 90);
-
-            if (!castle.destroyed) {
-                ctx.fillStyle = "#ffffff";
-                ctx.font = "bold 14px Segoe UI";
-                ctx.fillText("KALE HP: " + castle.hp, castle.x + 45, castle.y - 12);
-            }
-        }
-
-        // Grand Palace Exterior (Blue Domes)
-        if (palaceExterior.active && palaceExterior.x < canvas.width + 100) {
-            const px = palaceExterior.x;
-            const py = palaceExterior.y;
-
-            // Palace Main Building
-            ctx.fillStyle = "#85a3c2";
-            ctx.fillRect(px, py + 80, palaceExterior.width, 180);
-
-            // Left Tower
-            ctx.fillStyle = "#6382a4";
-            ctx.fillRect(px - 40, py + 40, 60, 220);
-
-            // Blue Domes
-            ctx.fillStyle = "#2980b9";
-            // Main Dome
-            ctx.beginPath();
-            ctx.arc(px + palaceExterior.width / 2, py + 80, 50, Math.PI, 0);
-            ctx.fill();
-            // Left Tower Dome
-            ctx.beginPath();
-            ctx.arc(px - 10, py + 40, 32, Math.PI, 0);
-            ctx.fill();
-
-            // Gold Spires
-            ctx.fillStyle = "#f1c40f";
-            ctx.fillRect(px + palaceExterior.width / 2 - 3, py + 15, 6, 20);
-            ctx.fillRect(px - 13, py, 6, 15);
-
-            // Palace Entrance Door
-            ctx.fillStyle = "#1a252f";
-            ctx.fillRect(px + 100, py + 180, 70, 80);
-            ctx.fillStyle = "#f39c12";
-            ctx.fillText("GİRİŞ ➔", px + 108, py + 170);
-        }
-    } else {
-        // --- Palace Interior Background (Stone Bricks) ---
-        ctx.fillStyle = "#1e272e";
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-        // Stone Brick Lines
-        ctx.strokeStyle = "#2d3436";
-        ctx.lineWidth = 2;
-        for (let y = 0; y < 320; y += 40) {
-            ctx.beginPath();
-            ctx.moveTo(0, y);
-            ctx.lineTo(canvas.width, y);
-            ctx.stroke();
-        }
-        for (let x = 0; x < canvas.width; x += 60) {
-            for (let y = 0; y < 320; y += 40) {
-                ctx.beginPath();
-                ctx.moveTo(x + (y % 80 === 0 ? 0 : 30), y);
-                ctx.lineTo(x + (y % 80 === 0 ? 0 : 30), y + 40);
-                ctx.stroke();
-            }
-        }
-    }
-
-    // --- Platforms ---
+    // Platform Kutuları
+    ctx.fillStyle = "#000000";
     platforms.forEach(p => {
-        if (gamePhase !== "palace_inside") {
-            ctx.fillStyle = "#27ae60"; // Grass
-            ctx.fillRect(p.x, p.y, p.width, 14);
-            ctx.fillStyle = "#795548"; // Dirt
-            ctx.fillRect(p.x, p.y + 14, p.width, p.height - 14);
-        } else {
-            ctx.fillStyle = "#d2dae2"; // Royal Marble
-            ctx.fillRect(p.x, p.y, p.width, 14);
-            ctx.fillStyle = "#485460";
-            ctx.fillRect(p.x, p.y + 14, p.width, p.height - 14);
-        }
+        ctx.fillRect(p.x, p.y, p.width, p.height);
     });
 
-    // --- Enemies ---
+    // Düşman Kutuları
     enemies.forEach(e => {
-        if (!e.alive) return;
-        if (e.type === "turtle") {
-            ctx.fillStyle = "#1e8449";
-            ctx.fillRect(e.x, e.y + 12, e.width, e.height - 12);
-            ctx.fillStyle = "#2ecc71";
-            ctx.fillRect(e.x - 6, e.y + 18, 10, 10);
-        } else {
-            ctx.fillStyle = "#34495e";
+        if (e.alive) {
+            ctx.fillStyle = e.color;
             ctx.fillRect(e.x, e.y, e.width, e.height);
-            ctx.fillStyle = "#c0392b";
-            ctx.fillRect(e.x + 6, e.y - 8, 20, 8);
         }
     });
 
-    // --- Wizard Mini-Boss ---
-    if (wizard.active && wizard.hp > 0) {
-        ctx.fillStyle = "#27ae60";
-        ctx.fillRect(wizard.x, wizard.y + 12, wizard.width, wizard.height - 12);
-        ctx.fillStyle = "#1e8449";
-        ctx.fillRect(wizard.x + 4, wizard.y, 36, 18);
-        ctx.fillStyle = "#f39c12";
-        ctx.fillRect(wizard.x + 8, wizard.y + 10, 16, 10);
-        ctx.fillStyle = "#111";
-        ctx.fillRect(wizard.x + 12, wizard.y + 12, 4, 4);
+    // Oyuncu Kutusu
+    ctx.fillStyle = player.color;
+    ctx.fillRect(player.x, player.y, player.width, player.height);
 
-        ctx.fillStyle = "#5d4037";
-        ctx.fillRect(wizard.x - 8, wizard.y - 5, 6, 55);
-        ctx.fillStyle = "#00d2ff";
-        ctx.beginPath();
-        ctx.arc(wizard.x - 5, wizard.y - 8, 8, 0, Math.PI * 2);
-        ctx.fill();
-
-        ctx.fillStyle = "#d35400";
-        ctx.fillRect(wizard.x + 14, wizard.y - 12, 12, 12);
-    }
-
-    // --- Final Boss: Dark Horned Queen ---
-    if (darkQueen.active && darkQueen.hp > 0) {
-        const qx = darkQueen.x;
-        const qy = darkQueen.y;
-
-        // Dark Armor Body
-        ctx.fillStyle = "#2c3e50";
-        ctx.fillRect(qx + 8, qy + 20, darkQueen.width - 16, darkQueen.height - 20);
-
-        // White Hair / Pale Face
-        ctx.fillStyle = "#ecf0f1";
-        ctx.fillRect(qx + 12, qy + 6, 28, 20);
-
-        // Large Curved Horns
-        ctx.fillStyle = "#111";
-        ctx.beginPath();
-        ctx.moveTo(qx + 8, qy + 8);
-        ctx.lineTo(qx - 8, qy - 18);
-        ctx.lineTo(qx + 14, qy + 2);
-        ctx.fill();
-
-        ctx.beginPath();
-        ctx.moveTo(qx + 44, qy + 8);
-        ctx.lineTo(qx + 60, qy - 18);
-        ctx.lineTo(qx + 38, qy + 2);
-        ctx.fill();
-
-        // Glowing Purple Eyes
-        ctx.fillStyle = "#9b59b6";
-        ctx.fillRect(qx + 16, qy + 12, 6, 6);
-        ctx.fillRect(qx + 30, qy + 12, 6, 6);
-
-        // Boss Health Bar
-        ctx.fillStyle = "#c0392b";
-        ctx.fillRect(canvas.width / 2 - 100, 20, 200, 14);
-        ctx.fillStyle = "#8e44ad";
-        ctx.fillRect(canvas.width / 2 - 100, 20, (darkQueen.hp / darkQueen.maxHp) * 200, 14);
-        ctx.strokeStyle = "#fff";
-        ctx.strokeRect(canvas.width / 2 - 100, 20, 200, 14);
-        ctx.fillStyle = "#fff";
-        ctx.font = "bold 12px Segoe UI";
-        ctx.fillText("KARANLIK KRALİÇE BOSS", canvas.width / 2 - 75, 14);
-    }
-
-    // --- Cage and Chicks ---
-    if (gamePhase === "palace_inside") {
-        const cx = chickCage.x;
-        const cy = chickCage.y;
-
-        // Golden Cage Bars
-        if (!chickCage.broken) {
-            ctx.fillStyle = "#f1c40f";
-            ctx.fillRect(cx, cy, chickCage.width, chickCage.height);
-            ctx.fillStyle = "#1e272e";
-            for (let bx = cx + 8; bx < cx + chickCage.width - 8; bx += 14) {
-                ctx.fillRect(bx, cy + 8, 6, chickCage.height - 16);
-            }
-        }
-
-        // Two Cute Yellow Chicks 🐣🐣
-        for (let i = 0; i < 2; i++) {
-            const chickX = cx + 14 + i * 26 + (chickCage.broken ? (i === 0 ? -20 : 30) : 0);
-            const chickY = cy + 42;
-
-            // Yellow Body
-            ctx.fillStyle = "#f1c40f";
-            ctx.beginPath();
-            ctx.arc(chickX, chickY, 10, 0, Math.PI * 2);
-            ctx.fill();
-
-            // Orange Beak & Eye
-            ctx.fillStyle = "#e67e22";
-            ctx.fillRect(chickX + (i === 0 ? 6 : -8), chickY - 2, 4, 4);
-            ctx.fillStyle = "#000";
-            ctx.fillRect(chickX + (i === 0 ? 2 : -4), chickY - 4, 3, 3);
-        }
-
-        if (chickCage.active && !chickCage.broken) {
-            ctx.fillStyle = "#f39c12";
-            ctx.font = "bold 13px Segoe UI";
-            ctx.fillText("KAFESİ VUR!", cx - 5, cy - 10);
-        }
-    }
-
-    // --- Magic Orbs ---
-    magicOrbs.forEach(orb => {
-        ctx.fillStyle = orb.color;
-        ctx.beginPath();
-        ctx.arc(orb.x, orb.y, orb.radius, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.fillStyle = "#ffffff";
-        ctx.beginPath();
-        ctx.arc(orb.x, orb.y, orb.radius * 0.4, 0, Math.PI * 2);
-        ctx.fill();
-    });
-
-    // --- Player Knight ---
-    ctx.fillStyle = "#bdc3c7";
-    ctx.fillRect(player.x, player.y + 12, player.width, player.height - 12);
-    ctx.fillStyle = "#ecf0f1";
-    ctx.fillRect(player.x + 4, player.y, 30, 18);
-    ctx.fillStyle = "#e74c3c";
-    ctx.fillRect(player.x + (player.facing > 0 ? 0 : 18), player.y - 10, 20, 10);
-    ctx.fillStyle = "#f1c40f";
-    const shieldX = player.facing > 0 ? player.x + player.width - 8 : player.x - 4;
-    ctx.fillRect(shieldX, player.y + 16, 12, 26);
-
+    // Saldırı Kutusu
     if (player.isAttacking) {
-        ctx.fillStyle = "#ffffff";
-        const swordX = player.facing > 0 ? player.x + player.width : player.x - 42;
-        ctx.fillRect(swordX, player.y + 18, 42, 8);
+        ctx.fillStyle = "#ff0000";
+        let attackX = player.facing > 0 ? player.x + player.width : player.x - 25;
+        ctx.fillRect(attackX, player.y + 10, 25, 20);
     }
 
-    // --- HUD ---
-    ctx.fillStyle = gamePhase === "palace_inside" ? "#ffffff" : "#2c3e50";
-    ctx.font = "bold 16px Segoe UI";
+    // Skor ve Mesafe
+    ctx.fillStyle = "#000000";
+    ctx.font = "bold 18px Arial";
     ctx.fillText("Skor: " + score, 20, 30);
-    if (gamePhase !== "palace_inside") {
-        ctx.fillText("Mesafe: " + distance + "m", 20, 52);
-    }
+    ctx.fillText("Mesafe: " + distance + "m", 20, 55);
 
-    // --- Game Over Screen ---
+    // Game Over
     if (gameOver) {
-        ctx.fillStyle = "rgba(0, 0, 0, 0.82)";
+        ctx.fillStyle = "rgba(255, 255, 255, 0.9)";
         ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-        ctx.fillStyle = "#e74c3c";
-        ctx.font = "bold 38px Segoe UI";
+        ctx.fillStyle = "#000000";
+        ctx.font = "bold 36px Arial";
         ctx.textAlign = "center";
-        ctx.fillText("OYUN BİTTİ", canvas.width / 2, canvas.height / 2 - 20);
-
-        ctx.fillStyle = "#ecf0f1";
-        ctx.font = "18px Segoe UI";
-        ctx.fillText("Yeniden başlamak için dokunun veya 'R' tuşuna basın", canvas.width / 2, canvas.height / 2 + 25);
-        ctx.textAlign = "left";
-    }
-
-    // --- Victory Screen ---
-    if (gameWon) {
-        // Render Confetti
-        confetti.forEach(c => {
-            ctx.fillStyle = c.color;
-            ctx.fillRect(c.x, c.y, c.size, c.size);
-        });
-
-        ctx.fillStyle = "rgba(0, 0, 0, 0.75)";
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-        ctx.fillStyle = "#f1c40f";
-        ctx.font = "bold 34px Segoe UI";
-        ctx.textAlign = "center";
-        ctx.fillText("TEBRİKLER!", canvas.width / 2, canvas.height / 2 - 40);
-        
-        ctx.fillStyle = "#2ecc71";
-        ctx.font = "bold 24px Segoe UI";
-        ctx.fillText("🐣 Civcivleri Kurtardın! 🐣", canvas.width / 2, canvas.height / 2 + 5);
-
-        ctx.fillStyle = "#ffffff";
-        ctx.font = "18px Segoe UI";
-        ctx.fillText("Toplam Skor: " + score, canvas.width / 2, canvas.height / 2 + 45);
-        ctx.fillText("Yeniden oynamak için dokunun veya 'R' tuşuna basın", canvas.width / 2, canvas.height / 2 + 80);
-        ctx.textAlign = "left";
+        ctx.fillText("OYUN BİTTİ", canvas.width / 2, 180);
+        ctx.font = "18px Arial";
+        ctx.fillText("Yeniden başlamak için sayfayı yenileyin", canvas.width / 2, 220);
+        ctx.textAlign = "start";
     }
 }
 
-function restartGame() {
-    score = 0;
-    distance = 0;
-    gameOver = false;
-    gameWon = false;
-    gamePhase = "forest";
-
-    player.x = 80;
-    player.y = 250;
-    player.dy = 0;
-
-    wizard.active = false;
-    wizard.hp = 1;
-
-    castle.active = false;
-    castle.hp = 10;
-    castle.x = 1200;
-    castle.destroyed = false;
-
-    palaceExterior.active = false;
-    palaceExterior.x = 2000;
-    palaceExterior.entered = false;
-
-    darkQueen.active = false;
-    darkQueen.hp = 5;
-
-    chickCage.active = false;
-    chickCage.broken = false;
-    chickCage.chicksFreed = false;
-
-    magicOrbs = [];
-    confetti = [];
-
-    platforms = [
-        { x: 0, y: 320, width: 3500, height: 80 },
-        { x: 300, y: 230, width: 120, height: 20 },
-        { x: 520, y: 170, width: 140, height: 20 },
-        { x: 800, y: 220, width: 130, height: 20 },
-        { x: 1450, y: 230, width: 130, height: 20 },
-        { x: 1700, y: 180, width: 140, height: 20 }
-    ];
-
-    enemies = [
-        { x: 450, y: 285, width: 35, height: 35, speed: 1.5, type: "turtle", alive: true, hp: 1 },
-        { x: 720, y: 280, width: 36, height: 40, speed: 2.0, type: "knight", alive: true, hp: 2 },
-        { x: 1020, y: 285, width: 35, height: 35, speed: 2.2, type: "turtle", alive: true, hp: 1 },
-        { x: 1550, y: 280, width: 36, height: 40, speed: 2.1, type: "knight", alive: true, hp: 2 }
-    ];
-}
-
-function gameLoop() {
+function loop() {
     update();
     draw();
-    requestAnimationFrame(gameLoop);
+    requestAnimationFrame(loop);
 }
 
-gameLoop();
+loop();
 </script>
 
 </body>

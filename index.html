@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Minimalist Kutu Parkur</title>
+    <title>Resimli Parkur Oyunu</title>
     <style>
         * {
             box-sizing: border-box;
@@ -83,17 +83,28 @@
 const canvas = document.getElementById("gameCanvas");
 const ctx = canvas.getContext("2d");
 
+// --- RESİMLER ---
+const bgImg = new Image();
+bgImg.src = "WhatsApp Image 2026-10-10 at 18.44.04.jpeg";
+
+const playerImg = new Image();
+playerImg.src = "56789.jpeg";
+
+const enemy1Img = new Image();
+enemy1Img.src = "WhatsApp Image 2026-10-10 at 18.39.47.jpeg";
+
+const enemy2Img = new Image();
+enemy2Img.src = "sovalye.png";
+
 let score = 0;
 let distance = 0;
 let gameOver = false;
 
-// Oyuncu Kutusu
 const player = {
     x: 100,
     y: 200,
     width: 40,
     height: 40,
-    color: "#0000ff", // Mavi Kutu
     dx: 0,
     dy: 0,
     speed: 5,
@@ -106,22 +117,19 @@ const player = {
 
 const gravity = 0.6;
 
-// Platform Kutuları
 let platforms = [
     { x: 0, y: 340, width: 900, height: 60 },
     { x: 350, y: 250, width: 120, height: 20 },
     { x: 600, y: 190, width: 140, height: 20 }
 ];
 
-// Düşman Kutuları
 let enemies = [
-    { x: 500, y: 300, width: 40, height: 40, color: "#008000", speed: 1.5, alive: true }, // Yeşil Kutu
-    { x: 750, y: 300, width: 40, height: 40, color: "#ff0000", speed: 2.0, alive: true }  // Kırmızı Kutu
+    { x: 500, y: 300, width: 40, height: 40, type: 1, speed: 1.5, alive: true },
+    { x: 750, y: 300, width: 40, height: 40, type: 2, speed: 2.0, alive: true }
 ];
 
 const keys = {};
 
-// Klavye Kontrolleri
 window.addEventListener("keydown", (e) => {
     keys[e.code] = true;
     if (e.code === "Space" || e.code === "KeyJ") attack();
@@ -131,7 +139,6 @@ window.addEventListener("keyup", (e) => {
     keys[e.code] = false;
 });
 
-// Ekran Butonları
 function bindBtn(id, code) {
     const btn = document.getElementById(id);
     btn.addEventListener("touchstart", (e) => { e.preventDefault(); keys[code] = true; });
@@ -180,20 +187,18 @@ function generateNewWorld() {
         let newWidth = Math.random() * 200 + 100;
         let newY = Math.random() * 120 + 200;
 
-        // Bazen ana zemin seviyesinde yap
         if (Math.random() > 0.4) newY = 340;
 
         platforms.push({ x: newX, y: newY, width: newWidth, height: newY === 340 ? 60 : 20 });
 
-        // Düşman ekle
         if (Math.random() > 0.3) {
-            let enemyType = Math.random() > 0.5 ? "#008000" : "#ff0000";
+            let enemyType = Math.random() > 0.5 ? 1 : 2;
             enemies.push({
                 x: newX + newWidth / 2,
                 y: newY - 40,
                 width: 40,
                 height: 40,
-                color: enemyType,
+                type: enemyType,
                 speed: Math.random() * 1.5 + 1,
                 alive: true
             });
@@ -204,7 +209,6 @@ function generateNewWorld() {
 function update() {
     if (gameOver) return;
 
-    // İleri / Geri Hareket
     if (keys["ArrowLeft"] || keys["KeyA"]) {
         player.dx = -player.speed;
         player.facing = -1;
@@ -223,7 +227,6 @@ function update() {
     player.dy += gravity;
     player.y += player.dy;
 
-    // Ekran Kaydırma (Sonsuz İlerleme)
     if (player.x > 300) {
         let diff = player.x - 300;
         player.x = 300;
@@ -233,15 +236,9 @@ function update() {
         enemies.forEach(e => e.x -= diff);
     }
 
-    // Sol Sınır
     if (player.x < 0) player.x = 0;
+    if (player.y > canvas.height + 50) gameOver = true;
 
-    // Düştü mü? (Oyun Bitti)
-    if (player.y > canvas.height + 50) {
-        gameOver = true;
-    }
-
-    // Platform Çarpışmaları
     player.grounded = false;
     platforms.forEach(p => {
         if (player.x + player.width > p.x &&
@@ -255,13 +252,11 @@ function update() {
         }
     });
 
-    // Saldırı Sayacı
     if (player.isAttacking) {
         player.attackTimer--;
         if (player.attackTimer <= 0) player.isAttacking = false;
     }
 
-    // Düşman Hareketi ve Çarpışma
     enemies.forEach(e => {
         if (!e.alive) return;
         e.x -= e.speed;
@@ -274,36 +269,48 @@ function update() {
         }
     });
 
-    // Temizlik ve Yeni Dünya Üretimi
     platforms = platforms.filter(p => p.x + p.width > -200);
     enemies = enemies.filter(e => e.x + e.width > -200);
     generateNewWorld();
 }
 
 function draw() {
-    // Bembeyaz Arka Plan
-    ctx.fillStyle = "#ffffff";
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    // Arka Plan Resmi (Yüklenmediyse beyaz renk gösterir)
+    if (bgImg.complete && bgImg.naturalWidth !== 0) {
+        ctx.drawImage(bgImg, 0, 0, canvas.width, canvas.height);
+    } else {
+        ctx.fillStyle = "#ffffff";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+    }
 
-    // Platform Kutuları
+    // Platformlar (Siyah Kutu)
     ctx.fillStyle = "#000000";
     platforms.forEach(p => {
         ctx.fillRect(p.x, p.y, p.width, p.height);
     });
 
-    // Düşman Kutuları
+    // Yaratıklar (Resimli / Yüklenmediyse Renkli Kutu)
     enemies.forEach(e => {
         if (e.alive) {
-            ctx.fillStyle = e.color;
-            ctx.fillRect(e.x, e.y, e.width, e.height);
+            let img = e.type === 1 ? enemy1Img : enemy2Img;
+            if (img.complete && img.naturalWidth !== 0) {
+                ctx.drawImage(img, e.x, e.y, e.width, e.height);
+            } else {
+                ctx.fillStyle = e.type === 1 ? "#008000" : "#ff0000";
+                ctx.fillRect(e.x, e.y, e.width, e.height);
+            }
         }
     });
 
-    // Oyuncu Kutusu
-    ctx.fillStyle = player.color;
-    ctx.fillRect(player.x, player.y, player.width, player.height);
+    // Oyuncu (Resimli / Yüklenmediyse Mavi Kutu)
+    if (playerImg.complete && playerImg.naturalWidth !== 0) {
+        ctx.drawImage(playerImg, player.x, player.y, player.width, player.height);
+    } else {
+        ctx.fillStyle = "#0000ff";
+        ctx.fillRect(player.x, player.y, player.width, player.height);
+    }
 
-    // Saldırı Kutusu
+    // Saldırı Efekti
     if (player.isAttacking) {
         ctx.fillStyle = "#ff0000";
         let attackX = player.facing > 0 ? player.x + player.width : player.x - 25;
@@ -316,7 +323,6 @@ function draw() {
     ctx.fillText("Skor: " + score, 20, 30);
     ctx.fillText("Mesafe: " + distance + "m", 20, 55);
 
-    // Game Over
     if (gameOver) {
         ctx.fillStyle = "rgba(255, 255, 255, 0.9)";
         ctx.fillRect(0, 0, canvas.width, canvas.height);

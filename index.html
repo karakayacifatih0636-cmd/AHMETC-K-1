@@ -442,7 +442,7 @@ function draw() {
         let currentImg = playerImg;
         let isMoving = (keys["ArrowLeft"] || keys["KeyA"] || keys["ArrowRight"] || keys["KeyD"]);
         if (isMoving && player.grounded) {
-            currentImg = (walkStep === 0) ? walkImg1 : walkImg2;
+            currentImg = (walkStep === 0) ? civyurume1.png : civyurume2.png;
         }
 
         if (currentImg.complete && currentImg.naturalWidth !== 0) {

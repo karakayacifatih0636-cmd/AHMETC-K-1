@@ -102,14 +102,14 @@ const ctx = canvas.getContext("2d");
 const bgImg = new Image();
 bgImg.src = "karanlık arka plan.jpeg";
 
-const playerImg = new Image();
-playerImg.src = "civyurume1.png";
+const civStandImg = new Image();
+civStandImg.src = "civyurume1.png"; //[cite: 2] Durma ve düz ayak hali
 
-const walkImg1 = new Image();
-walkImg1.src = "civyurume2.png";
+const civWalk1 = new Image();
+civWalk1.src = "civyurume1.png"; //[cite: 2]
 
-const walkImg2 = new Image();
-walkImg2.src = "civyurume1.png";
+const civWalk2 = new Image();
+civWalk2.src = "civyurume2.png"; //[cite: 3]
 
 const enemy1Img = new Image();
 enemy1Img.src = "WhatsApp Image 2026-10-10 at 18.39.47.jpeg";
@@ -209,10 +209,12 @@ const player = {
 
 const gravity = 0.6;
 
+// Düzenlenen Erişilebilir Platformlar
 let platforms = [
     { x: 0, y: 340, width: 900, height: 60 },
-    { x: 350, y: 250, width: 120, height: 20 },
-    { x: 600, y: 190, width: 140, height: 20 }
+    { x: 320, y: 260, width: 140, height: 20 },
+    { x: 550, y: 200, width: 140, height: 20 },
+    { x: 780, y: 260, width: 140, height: 20 }
 ];
 
 let enemies = [
@@ -280,11 +282,11 @@ function generateNewWorld() {
 
     let lastPlatform = platforms[platforms.length - 1];
     if (lastPlatform && lastPlatform.x < canvas.width + 200) {
-        let newX = lastPlatform.x + lastPlatform.width + Math.random() * 80 + 40;
-        let newWidth = Math.random() * 200 + 100;
-        let newY = Math.random() * 120 + 200;
-
-        if (Math.random() > 0.4) newY = 340;
+        let newX = lastPlatform.x + lastPlatform.width + Math.random() * 80 + 50;
+        let newWidth = 140;
+        let newY = lastPlatform.y + (Math.random() > 0.5 ? -40 : 40);
+        if (newY < 160) newY = 180;
+        if (newY > 320) newY = 340;
 
         platforms.push({ x: newX, y: newY, width: newWidth, height: newY === 340 ? 60 : 20 });
 
@@ -324,9 +326,10 @@ function update() {
         player.dx = 0;
     }
 
+    // 20 salisede (frame) bir yürüme pencereleri değişimi
     if (isMoving && player.grounded) {
         walkTimer++;
-        if (walkTimer >= 21) {
+        if (walkTimer >= 20) {
             walkStep = (walkStep === 0) ? 1 : 0;
             walkTimer = 0;
             playSound('walk');
@@ -391,7 +394,7 @@ function update() {
             player.y + player.height > e.y) {
             
             if (player.invincibleTimer === 0) {
-                health -= 20;
+                health -= 10; // Hasar 10 puana düşürüldü
                 player.invincibleTimer = 60;
                 playSound('hit');
                 currentHitEffect = Math.floor(Math.random() * 3);
@@ -410,7 +413,6 @@ function update() {
 }
 
 function draw() {
-    // Arka Plan (Yüklendiyse görsel, yüklenmediyse şık koyu tema)
     if (bgImg.complete && bgImg.naturalWidth !== 0) {
         ctx.drawImage(bgImg, 0, 0, canvas.width, canvas.height);
     } else {
@@ -418,13 +420,11 @@ function draw() {
         ctx.fillRect(0, 0, canvas.width, canvas.height);
     }
 
-    // Platformlar
     ctx.fillStyle = "#000000";
     platforms.forEach(p => {
         ctx.fillRect(p.x, p.y, p.width, p.height);
     });
 
-    // Düşmanlar
     enemies.forEach(e => {
         if (e.alive) {
             let img = e.type === 1 ? enemy1Img : enemy2Img;
@@ -437,12 +437,13 @@ function draw() {
         }
     });
 
-    // Oyuncu Çizimi ve Yürüme Animasyonu
+    // Oyuncu Çizimi ve Animasyon Kontrolü
     if (player.invincibleTimer % 10 < 5) {
-        let currentImg = playerImg;
+        let currentImg = civStandImg; // Durunca 1. png (ayakları düz)[cite: 2]
         let isMoving = (keys["ArrowLeft"] || keys["KeyA"] || keys["ArrowRight"] || keys["KeyD"]);
+        
         if (isMoving && player.grounded) {
-            currentImg = (walkStep === 0) ? civyurume1.png : civyurume2.png;
+            currentImg = (walkStep === 0) ? civWalk1 : civWalk2; //[cite: 2, 3]
         }
 
         if (currentImg.complete && currentImg.naturalWidth !== 0) {
@@ -559,8 +560,9 @@ function resetGame() {
     player.dy = 0;
     platforms = [
         { x: 0, y: 340, width: 900, height: 60 },
-        { x: 350, y: 250, width: 120, height: 20 },
-        { x: 600, y: 190, width: 140, height: 20 }
+        { x: 320, y: 260, width: 140, height: 20 },
+        { x: 550, y: 200, width: 140, height: 20 },
+        { x: 780, y: 260, width: 140, height: 20 }
     ];
     enemies = [
         { x: 500, y: 300, width: 40, height: 40, type: 1, speed: 1.5, alive: true },

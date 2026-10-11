@@ -82,7 +82,7 @@
     <div id="gameContainer">
         <canvas id="gameCanvas" width="800" height="400"></canvas>
 
-        <div class="controls-overlay">
+        <div class="controls-overlay" id="mobileControls" style="display: none;">
             <div class="btn-group">
                 <button id="leftBtn">◀</button>
                 <button id="rightBtn">▶</button>
@@ -103,7 +103,7 @@ const bgImg = new Image();
 bgImg.src = "karanlık arka plan.jpeg";
 
 const civStandImg = new Image();
-civStandImg.src = "civyurume1.png"; //[cite: 2] Durma ve düz ayak hali
+civStandImg.src = "civyurume1.png"; //[cite: 2]
 
 const civWalk1 = new Image();
 civWalk1.src = "civyurume1.png"; //[cite: 2]
@@ -120,6 +120,10 @@ enemy2Img.src = "WhatsApp Image 2026-10-10 at 18.39.48.jpeg";
 const attackImg = new Image();
 attackImg.src = "kılıcarkayk.png";
 
+// Kale Görseli (5000 metrede çıkacak)
+const castleImg = new Image();
+castleImg.src = "kale.png";
+
 const hitEffectImgs = [
     new Image(),
     new Image(),
@@ -129,8 +133,11 @@ hitEffectImgs[0].src = "kılıcarkayk.png";
 hitEffectImgs[1].src = "kılıcarkayk.png";
 hitEffectImgs[2].src = "kılıcarkayk.png";
 
-// --- WEB AUDIO API (SESLER) ---
+// --- OYUN DURUMLARI & SES ---
+let gameState = "MENU"; // "MENU", "PLAYING", "GAMEOVER", "WIN"
+let soundEnabled = true;
 let audioCtx = null;
+
 function initAudio() {
     if (!audioCtx) {
         audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -138,7 +145,7 @@ function initAudio() {
 }
 
 function playSound(type) {
-    if (!audioCtx) return;
+    if (!soundEnabled || !audioCtx) return;
     let osc = audioCtx.createOscillator();
     let gainNode = audioCtx.createGain();
     osc.connect(gainNode);
@@ -184,10 +191,7 @@ function playSound(type) {
 let score = 0;
 let distance = 0;
 let health = 100;
-let gameOver = false;
-let gameWon = false;
 let currentHitEffect = 0;
-
 let walkTimer = 0;
 let walkStep = 0;
 
@@ -209,7 +213,6 @@ const player = {
 
 const gravity = 0.6;
 
-// Düzenlenen Erişilebilir Platformlar
 let platforms = [
     { x: 0, y: 340, width: 900, height: 60 },
     { x: 320, y: 260, width: 140, height: 20 },
@@ -221,6 +224,14 @@ let enemies = [
     { x: 500, y: 300, width: 40, height: 40, type: 1, speed: 1.5, alive: true },
     { x: 750, y: 300, width: 40, height: 40, type: 2, speed: 2.0, alive: true }
 ];
+
+// Kale objesi (5000 metrede belirleyecek)
+let castle = {
+    x: 5500,
+    y: 180,
+    width: 120,
+    height: 160
+};
 
 const keys = {};
 
@@ -236,6 +247,7 @@ window.addEventListener("keyup", (e) => {
 
 function bindBtn(id, code) {
     const btn = document.getElementById(id);
+    if (!btn) return;
     btn.addEventListener("touchstart", (e) => { e.preventDefault(); initAudio(); keys[code] = true; });
     btn.addEventListener("touchend", (e) => { e.preventDefault(); keys[code] = false; });
     btn.addEventListener("mousedown", () => { initAudio(); keys[code] = true; });
@@ -249,7 +261,7 @@ document.getElementById("jumpBtn").addEventListener("click", () => { initAudio()
 document.getElementById("attackBtn").addEventListener("click", () => { initAudio(); attack(); });
 
 function jump() {
-    if (player.grounded && !gameOver && !gameWon) {
+    if (player.grounded && gameState === "PLAYING") {
         player.dy = player.jumpPower;
         player.grounded = false;
         playSound('jump');
@@ -257,7 +269,7 @@ function jump() {
 }
 
 function attack() {
-    if (player.isAttacking || gameOver || gameWon) return;
+    if (player.isAttacking || gameState !== "PLAYING") return;
     player.isAttacking = true;
     player.attackTimer = 12;
     playSound('attack');
@@ -306,7 +318,7 @@ function generateNewWorld() {
 }
 
 function update() {
-    if (gameOver || gameWon) return;
+    if (gameState !== "PLAYING") return;
 
     if (player.invincibleTimer > 0) {
         player.invincibleTimer--;
@@ -326,7 +338,6 @@ function update() {
         player.dx = 0;
     }
 
-    // 20 salisede (frame) bir yürüme pencereleri değişimi
     if (isMoving && player.grounded) {
         walkTimer++;
         if (walkTimer >= 20) {
@@ -354,16 +365,24 @@ function update() {
 
         platforms.forEach(p => p.x -= diff);
         enemies.forEach(e => e.x -= diff);
+        castle.x -= diff; // Kaleyi de kaydır
     }
 
     if (player.x < 0) player.x = 0;
     if (player.y > canvas.height + 50) {
         health = 0;
-        gameOver = true;
+        gameState = "GAMEOVER";
+        document.getElementById("mobileControls").style.display = "none";
     }
 
-    if (distance >= 5000 && !gameWon) {
-        gameWon = true;
+    // Kale ile Çarpışma Kontrolü (Oyun Bitişi)
+    if (distance >= 5000 &&
+        player.x < castle.x + castle.width &&
+        player.x + player.width > castle.x &&
+        player.y < castle.y + castle.height &&
+        player.y + player.height > castle.y) {
+        gameState = "WIN";
+        document.getElementById("mobileControls").style.display = "none";
     }
 
     player.grounded = false;
@@ -394,14 +413,15 @@ function update() {
             player.y + player.height > e.y) {
             
             if (player.invincibleTimer === 0) {
-                health -= 10; // Hasar 10 puana düşürüldü
+                health -= 10;
                 player.invincibleTimer = 60;
                 playSound('hit');
                 currentHitEffect = Math.floor(Math.random() * 3);
 
                 if (health <= 0) {
                     health = 0;
-                    gameOver = true;
+                    gameState = "GAMEOVER";
+                    document.getElementById("mobileControls").style.display = "none";
                 }
             }
         }
@@ -413,6 +433,41 @@ function update() {
 }
 
 function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    // 1. ANA MENÜ EKRANI
+    if (gameState === "MENU") {
+        if (bgImg.complete && bgImg.naturalWidth !== 0) {
+            ctx.drawImage(bgImg, 0, 0, canvas.width, canvas.height);
+        } else {
+            ctx.fillStyle = "#111111";
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+        }
+
+        // Başlık
+        ctx.fillStyle = "#ffffff";
+        ctx.font = "bold 38px Arial";
+        ctx.textAlign = "center";
+        ctx.fillText("CİVCİV'İN GECE MACERASI", canvas.width / 2, 130);
+
+        // PLAY BUTONU
+        ctx.fillStyle = "#00ff00";
+        ctx.fillRect(canvas.width / 2 - 100, 200, 200, 60);
+        ctx.fillStyle = "#000000";
+        ctx.font = "bold 24px Arial";
+        ctx.fillText("OYNA (PLAY)", canvas.width / 2, 238);
+
+        // SES AÇMA / KAPAMA BUTONU (Sağ Üst: x: 720, y: 20, w: 60, h: 40)
+        ctx.fillStyle = "rgba(255,255,255,0.8)";
+        ctx.fillRect(720, 20, 60, 40);
+        ctx.fillStyle = "#000000";
+        ctx.font = "bold 18px Arial";
+        ctx.fillText(soundEnabled ? "🔊 SES" : "🔇 SES", 750, 45);
+        ctx.textAlign = "start";
+        return;
+    }
+
+    // 2. OYUN İÇİ ÇİZİMLERİ
     if (bgImg.complete && bgImg.naturalWidth !== 0) {
         ctx.drawImage(bgImg, 0, 0, canvas.width, canvas.height);
     } else {
@@ -420,11 +475,26 @@ function draw() {
         ctx.fillRect(0, 0, canvas.width, canvas.height);
     }
 
+    // Platformlar
     ctx.fillStyle = "#000000";
     platforms.forEach(p => {
         ctx.fillRect(p.x, p.y, p.width, p.height);
     });
 
+    // 5000 metrede Kale Çizimi
+    if (distance >= 4800) {
+        if (castleImg.complete && castleImg.naturalWidth !== 0) {
+            ctx.drawImage(castleImg, castle.x, castle.y, castle.width, castle.height);
+        } else {
+            ctx.fillStyle = "#888888";
+            ctx.fillRect(castle.x, castle.y, castle.width, castle.height);
+            ctx.fillStyle = "#ffffff";
+            ctx.font = "bold 14px Arial";
+            ctx.fillText("KALE", castle.x + 40, castle.y + 80);
+        }
+    }
+
+    // Düşmanlar
     enemies.forEach(e => {
         if (e.alive) {
             let img = e.type === 1 ? enemy1Img : enemy2Img;
@@ -437,11 +507,10 @@ function draw() {
         }
     });
 
-    // Oyuncu Çizimi ve Animasyon Kontrolü
+    // Oyuncu
     if (player.invincibleTimer % 10 < 5) {
-        let currentImg = civStandImg; // Durunca 1. png (ayakları düz)[cite: 2]
+        let currentImg = civStandImg;
         let isMoving = (keys["ArrowLeft"] || keys["KeyA"] || keys["ArrowRight"] || keys["KeyD"]);
-        
         if (isMoving && player.grounded) {
             currentImg = (walkStep === 0) ? civWalk1 : civWalk2; //[cite: 2, 3]
         }
@@ -464,7 +533,7 @@ function draw() {
         }
     }
 
-    // ÜST BİLGİLER
+    // Üst Bilgiler
     ctx.fillStyle = "#ffffff";
     ctx.font = "bold 16px Arial";
     ctx.fillText("Skor: " + score, 20, 30);
@@ -473,11 +542,18 @@ function draw() {
     // Can Barı
     ctx.strokeStyle = "#ffffff";
     ctx.lineWidth = 2;
-    ctx.strokeRect(580, 15, 200, 20);
+    ctx.strokeRect(480, 15, 180, 20);
     ctx.fillStyle = health > 40 ? "#00ff00" : "#ff0000";
-    ctx.fillRect(580, 15, (health / 100) * 200, 20);
+    ctx.fillRect(480, 15, (health / 100) * 180, 20);
     ctx.fillStyle = "#ffffff";
-    ctx.fillText("Can: " + health + "%", 630, 31);
+    ctx.fillText("Can: " + health + "%", 530, 31);
+
+    // Sağ Üst Ses Tuşu (Oyun İçi)
+    ctx.fillStyle = "rgba(255,255,255,0.8)";
+    ctx.fillRect(700, 15, 80, 35);
+    ctx.fillStyle = "#000000";
+    ctx.font = "bold 14px Arial";
+    ctx.fillText(soundEnabled ? "🔊 SES AÇIK" : "🔇 SES KAPALI", 705, 37);
 
     if (player.invincibleTimer > 45) {
         let effImg = hitEffectImgs[currentHitEffect];
@@ -487,7 +563,7 @@ function draw() {
     }
 
     // GAME OVER EKRANI
-    if (gameOver) {
+    if (gameState === "GAMEOVER") {
         ctx.fillStyle = "rgba(0, 0, 0, 0.9)";
         ctx.fillRect(0, 0, canvas.width, canvas.height);
 
@@ -505,7 +581,7 @@ function draw() {
     }
 
     // KAZANDIN EKRANI
-    if (gameWon) {
+    if (gameState === "WIN") {
         ctx.fillStyle = "rgba(0, 0, 0, 0.9)";
         ctx.fillRect(0, 0, canvas.width, canvas.height);
 
@@ -516,17 +592,18 @@ function draw() {
 
         ctx.fillStyle = "#ffffff";
         ctx.font = "bold 20px Arial";
-        ctx.fillText("Kaleye ulaştın!", canvas.width / 2, 190);
+        ctx.fillText("Kaleye ulaştın ve görevi tamamladın!", canvas.width / 2, 190);
 
         ctx.fillStyle = "#ffffff";
         ctx.fillRect(canvas.width / 2 - 100, 230, 200, 50);
         ctx.fillStyle = "#000000";
         ctx.font = "bold 18px Arial";
-        ctx.fillText("DEVAM EDİLECEK", canvas.width / 2, 262);
+        ctx.fillText("ANA MENÜ", canvas.width / 2, 262);
         ctx.textAlign = "start";
     }
 }
 
+// Tıklama ve Dokunma Kontrolleri
 canvas.addEventListener("click", (e) => {
     let rect = canvas.getBoundingClientRect();
     let scaleX = canvas.width / rect.width;
@@ -534,16 +611,41 @@ canvas.addEventListener("click", (e) => {
     let mouseX = (e.clientX - rect.left) * scaleX;
     let mouseY = (e.clientY - rect.top) * scaleY;
 
-    if (gameOver) {
+    // ANA MENÜ TIKLAMALARI
+    if (gameState === "MENU") {
+        initAudio();
+        // Play Butonu
         if (mouseX >= canvas.width / 2 - 100 && mouseX <= canvas.width / 2 + 100 &&
-            mouseY >= 180 && mouseY <= 230) {
+            mouseY >= 200 && mouseY <= 260) {
+            gameState = "PLAYING";
+            document.getElementById("mobileControls").style.display = "flex";
             resetGame();
         }
-    } else if (gameWon) {
+        // Ses Açma/Kapama Tuşu
+        if (mouseX >= 720 && mouseX <= 780 && mouseY >= 20 && mouseY <= 60) {
+            soundEnabled = !soundEnabled;
+        }
+    }
+    // OYUN İÇİ SES TUŞU TIKLAMASI
+    else if (gameState === "PLAYING") {
+        if (mouseX >= 700 && mouseX <= 780 && mouseY >= 15 && mouseY <= 50) {
+            soundEnabled = !soundEnabled;
+        }
+    }
+    // GAME OVER TIKLAMASI
+    else if (gameState === "GAMEOVER") {
+        if (mouseX >= canvas.width / 2 - 100 && mouseX <= canvas.width / 2 + 100 &&
+            mouseY >= 180 && mouseY <= 230) {
+            gameState = "PLAYING";
+            document.getElementById("mobileControls").style.display = "flex";
+            resetGame();
+        }
+    }
+    // KAZANDIN TIKLAMASI
+    else if (gameState === "WIN") {
         if (mouseX >= canvas.width / 2 - 100 && mouseX <= canvas.width / 2 + 100 &&
             mouseY >= 230 && mouseY <= 280) {
-            gameWon = false;
-            distance += 1;
+            gameState = "MENU";
         }
     }
 });
@@ -552,12 +654,11 @@ function resetGame() {
     score = 0;
     distance = 0;
     health = 100;
-    gameOver = false;
-    gameWon = false;
     player.x = 100;
     player.y = 200;
     player.dx = 0;
     player.dy = 0;
+    castle.x = 5500;
     platforms = [
         { x: 0, y: 340, width: 900, height: 60 },
         { x: 320, y: 260, width: 140, height: 20 },
